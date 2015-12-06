@@ -20,7 +20,7 @@ public class Traffic {
 	
 	/* Definicoes de Classes de Servicos */
 	public static final String SERVICES="services";
-	public static final String N_SERVICES="1";
+	public static final String N_SERVICES="4";
 	
 	public static final String S1="1.0"; 	
 	public static final String S2="0.5"; 	
@@ -59,11 +59,11 @@ public class Traffic {
 
 		ArrayList<Packet> pkts = new ArrayList<Packet>();
 		Packet tmp = null;
-		int maxNumberStatic = Math.floorDiv(Constants.N_TOTAL_PKTS, Constants.N_USERS);
+		int maxNumberStatic = Math.floorDiv(Constants.getN_TOTAL_PKTS(), Constants.getN_USERS());
 		int maxNumberVar=maxNumberStatic;
 		int a=1;
 		
-		for (int i = 1; i <= Constants.N_TOTAL_PKTS; i++) {
+		for (int i = 1; i <= Constants.getN_TOTAL_PKTS(); i++) {
 			tmp = new Packet();
 
 			Integer rand_simbolos = Integer.valueOf(Distribution.getPoissonRandom(Constants.SIMBOLS_DISTRIBUTION));
@@ -153,12 +153,12 @@ public class Traffic {
 //					  "_distribCQI="+Constants.CQI_DISTRIBUTION+
 //					  "_distribSimbolos"+"Poisson."+Constants.SIMBOLOS_DISTRIBUTION+
 //					  ".dat";
-		TextManage.nomeArquivo = "arquivo.txt";
+		TextManage.nomeArquivo = "arquivo1.txt";
 		
 		TextManage.criarTXT();
 		
 		TextManage.escreve("data;");
-		TextManage.escreve("param k :="+Constants.N_TOTAL_PKTS+";"); 	//numero de pacotes
+		TextManage.escreve("param k :="+Constants.getN_TOTAL_PKTS()+";"); 	//numero de pacotes
 		TextManage.escreve("param n :="+Constants.N_TOTAL_SB+";"); 		// numero de SBs 
 		TextManage.escreve("param m :="+N_MCS+";"); 					// numero de mcss
 		TextManage.escreve("param p :="+N_SERVICES+";"); 				//numero de servicos

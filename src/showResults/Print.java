@@ -55,8 +55,17 @@ public class Print {
 	}
 	
 	/**
-	 * Recebe uma simulação e retorna as estatisticas de quais tipos de pacotes foram <br>
-	 * alocados em cada TTI em uma evolução temporal.
+	 * Recebe uma simulação e retorna as estatisticas de quais tipos de pacotes foram alocados em cada TTI em uma evolução temporal.<br>
+	 * Na matriz, tipoServicos[i][j]. As linhas [i], representam nro_total_TTIs e as colunas [j] os tipos de serviços logo, <br> 
+	 * tipoServicos[i][j]= nro de pkts do tipo [j] alocados no TTI [i]. <br>
+	 *  EX:..<br>
+	 *  0.0 0.0 0.0 0.0 0.0 <br> 
+	 *  1.0 3.0 3.0 0.0 0.0 <br>
+	 *  2.0 0.0 0.0 6.0 0.0 <br>
+	 *
+	 * A matriz acima representa que 3 pkts do tipo A e 3 do tipo B foram alocados no TTI 1 e 6 do tipo 3 no segundo TTI. <br>
+	 * 
+	 * OBS:.. Pkts que não foram alocados, não são mostrados na matriz. 
 	 * 
 	 * @param ttiTmp
 	 */
@@ -64,7 +73,7 @@ public class Print {
 		
 		ArrayList<TTI> itr = ttiTmp;
 		ArrayList<SB> itr1 = null;
-		double[][] tosStatistic = new double[Constants.TTI_TOTAL+1][5] ;
+		double[][] tosStatistic = new double[Constants.getTTI_TOTAL()+1][5] ;
 		double a=1,b=1,c=1,d=1;
 
 		for (int i = 0; i < itr.size(); i++) {
@@ -111,9 +120,9 @@ public class Print {
 	
 		ArrayList<TTI> itr = simulation;
 		ArrayList<SB> itr1 = null;
-		Double[] aux = new Double[Constants.N_USERS+1];
+		Double[] aux = new Double[Constants.getN_USERS()+1];
 		
-		for(int p=0;p<=Constants.N_USERS;p++)
+		for(int p=0;p<=Constants.getN_USERS();p++)
 			aux[p]=0.0;
 		
 		for (int i = 0; i < itr.size(); i++) {
@@ -123,7 +132,7 @@ public class Print {
 			for (int j = 0; j < itr1.size(); j++) {
 				SB element1 = itr1.get(j);
 				
-				for (int k=1;k<=Constants.N_USERS;k++){
+				for (int k=1;k<=Constants.getN_USERS();k++){
 					if (element1.getPacket().getUser() == k){
 						aux[k]= aux[k] + element1.getThroughput();
 					}  
@@ -133,16 +142,16 @@ public class Print {
 		
 		Double sum_rate = 0., sum_quadrada = 0., fairness=0.;
 		
-		System.out.println("Rate total de cada user");
+		System.out.println("Rate total de cada user:");
 		
 		//calcula o sum_rate i.e. a media de todos rates somadas
-		for(int p=1;p<=Constants.N_USERS;p++){
-			System.out.println(aux[p]);
-			sum_rate=(aux[p]/Constants.N_USERS)+sum_rate;
-			sum_quadrada=Math.pow((aux[p]/Constants.N_USERS),2)+sum_quadrada;
+		for(int p=1;p<=Constants.getN_USERS();p++){
+			System.out.println("Usuário "+p+" = "+aux[p]);
+			sum_rate=(aux[p]/Constants.getN_USERS())+sum_rate;
+			sum_quadrada=Math.pow((aux[p]/Constants.getN_USERS()),2)+sum_quadrada;
 		}
 				
-		fairness=(Math.pow(Math.abs(sum_rate),2) / (Constants.N_USERS*sum_quadrada));
+		fairness=(Math.pow(Math.abs(sum_rate),2) / (Constants.getN_USERS()*sum_quadrada));
 		
 		System.out.println("Soma das medias dos rates = "+sum_rate);
 		System.out.println("Soma quadratica das medias = "+sum_quadrada);
@@ -153,6 +162,7 @@ public class Print {
 	 * Imprime o array List do trafego dos usuarios
 	 */
 	public static void printTraffic(ArrayList<Packet> pktsToPrint){
+		
 		for (Packet x : pktsToPrint){
             x.printPacketList();
         }
@@ -220,5 +230,6 @@ public class Print {
 		printTraffic(alocados);
 		System.out.println("\n Nao Alocados: \n");
 		printTraffic(naoAlocados);
+		
 	}
 }

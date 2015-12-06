@@ -1,85 +1,21 @@
 package scheduling;
 
-import generateResource.Traffic;
-
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+
 import lteStructure.Packet;
 import lteStructure.SB;
 import lteStructure.TTI;
 import showResults.Plot;
-import showResults.Print;
 import utils.ArrayUtil;
 import utils.TextManage;
 
 public class Scheduler {
 
 	private static ArrayUtil util = new ArrayUtil();
-	private static ArrayList<TTI> simulation = new ArrayList<TTI>();
-	private static long t_inicial, t_final, t_total;
-	
-	public static void main(String[] args) throws FileNotFoundException, IOException {
-		
-		/************ Scheduler TDPS - FDPS ************/
-
-		ArrayList<TTI> ttiTmp = new ArrayList<TTI>(simulation);
-		ArrayList<Packet> pktsTmp = new ArrayList<Packet>();
-
-		if (Constants.INPUT_MODE==0){
-			pktsTmp = Traffic.trafficGenerate(); 								//Gera tráfego dinâmicamente
-		} else if (Constants.INPUT_MODE==1){
-			pktsTmp = Traffic.trafficGenerate(); 								//Gera tráfego dinâmicamente
-			Traffic.trafficToFile(pktsTmp); 									//Armazena o tráfego em um arquivo
-		} else if (Constants.INPUT_MODE==2){
-			pktsTmp = Traffic.convertTxtToPkts(Constants.INPUT_FILE); 			// Lê o tráfego de um arquivo
-		}
-
-		t_inicial = System.currentTimeMillis();
-
-		switch (Constants.EXECUTION_MODE) {
-		case 0:
-			ttiTmp = allocateResources(pktsTmp); 	//Executa apenas uma simulação
-			break;
-		case 1:
-			 genMapDelta(pktsTmp); 					//Gera um mapa de pontos delta x rate
-			break;
-		case 2: 
-			genTTIrate(pktsTmp);					//Gera rate dos ttis
-			break;
-		case 3: 
-			genMapFairness(pktsTmp);				//Gera um mapa de pontos delta x fairness
-			break;
-		case 4: 
-			genMapLosses(pktsTmp);					//Gera um mapa das perdas
-			break;
-		}
-		
-		t_final = System.currentTimeMillis();
-		t_total = t_final - t_inicial;
-
-		/************ PRINTS ************/
-		
-//		Print.printTraffic(pktsTmp);
-//		Print.printFairness(ttiTmp);
-//		Print.printTTI(ttiTmp);
-//		Print.printAllocationStatus(pktsTmp,ttiTmp);
-//		Print.printPktServicesDelay(ttiTmp);
-		
-//		Plot.plotFairness(ttiTmp);
-//		Plot.plotSBxUser(ttiTmp);
-//		Plot.plotSBxDelay(ttiTmp); 		
-//		Plot.plotSBxRate(ttiTmp);
-//		Plot.plotSBxMCS(ttiTmp);
-//		Plot.plotAllocationStatus(pktsTmp,ttiTmp);
-		
-		System.out.println("Tempo TOTAL de execucao programa = " + t_total + "ms");
-		
-	}
 
 	/**
 	 * Efetua a simulação de escalonamento escrevendo os resultados em um arquivo. <br>
@@ -96,7 +32,7 @@ public class Scheduler {
 		 TextManage.arquivo = new File(TextManage.path);
 		 TextManage.nomeArquivo = "ttiRate"+
 		 "_rb="+Constants.N_TOTAL_SB+
-		 "_pkts="+Constants.N_TOTAL_PKTS+
+		 "_pkts="+Constants.getN_TOTAL_PKTS()+
 		 "_v="+v+
 		 "_w="+w+
 		 ".dat";
@@ -126,11 +62,11 @@ public class Scheduler {
 		double pi = 0.0, pf = 2.0, v = 0, w = 0;
 		
 		TextManage.arquivo = new File(TextManage.path);
-		TextManage.nomeArquivo = "deltaMap"+
+		TextManage.nomeArquivo = "deltaMap_Rate"+
 					  "_pontos="+pontos+
-					  "_rb="+Constants.TTI_TOTAL*Constants.SB_EACH_TTI+
-					  "_pkts="+Constants.N_TOTAL_PKTS+
-					  "_sort_mode="+Constants.SORT_MODE+
+					  "_rb="+Constants.getTTI_TOTAL()*Constants.getSB_EACH_TTI()+
+					  "_pkts="+Constants.getN_TOTAL_PKTS()+
+					  "_sort_mode="+Constants.getSORT_MODE()+
 					  ".dat";
 		TextManage.criarTXT();	
 
@@ -169,9 +105,9 @@ public class Scheduler {
 		TextManage.arquivo = new File(TextManage.path);
 		TextManage.nomeArquivo = "deltaMap_Fairness"+
 					  "_pontos="+pontos+
-					  "_rb="+Constants.TTI_TOTAL*Constants.SB_EACH_TTI+
-					  "_pkts="+Constants.N_TOTAL_PKTS+
-					  "_sort_mode="+Constants.SORT_MODE+
+					  "_rb="+Constants.getTTI_TOTAL()*Constants.getSB_EACH_TTI()+
+					  "_pkts="+Constants.getN_TOTAL_PKTS()+
+					  "_sort_mode="+Constants.getSORT_MODE()+
 					  ".dat";
 		TextManage.criarTXT();	
 
@@ -204,14 +140,14 @@ public class Scheduler {
 
 		double pontos = Constants.N_POINTS_MAP;
 		double pi = 0.0, pf = 2.0, v = 0, w = 0;
-		double gama=0.,x=0.,y=0.;
+		double gama=0.,x=0.,y=0,z=0.,u=0.;
 		
 		TextManage.arquivo = new File(TextManage.path);
 		TextManage.nomeArquivo = "deltaMap_Losses"+
 					  "_pontos="+pontos+
-					  "_rb="+Constants.TTI_TOTAL*Constants.SB_EACH_TTI+
-					  "_pkts="+Constants.N_TOTAL_PKTS+
-					  "_sort_mode="+Constants.SORT_MODE+
+					  "_rb="+Constants.getTTI_TOTAL()*Constants.getSB_EACH_TTI()+
+					  "_pkts="+Constants.getN_TOTAL_PKTS()+
+					  "_sort_mode="+Constants.getSORT_MODE()+
 					  ".dat";
 		TextManage.criarTXT();	
 
@@ -223,19 +159,34 @@ public class Scheduler {
 
 			for (int j = 0; j <= pontos; j++) {
 				w = pi + j / pontos * (pf - pi);
-
-				ArrayList<TTI> simulacao = new ArrayList<TTI>();
+				
 				ArrayList<Integer> vet = allocateResourcesWithLosses(pkts, v, w);
 				
-				x=vet.get(0).doubleValue()/(Constants.N_TOTAL_PKTS/4);
-				y=vet.get(1).doubleValue()/(Constants.N_TOTAL_PKTS/4);
-							
-				gama=(x+y)/2;
+				if (vet != null) {
+					if (vet.size() == 1) {
+						x = vet.get(0).doubleValue()
+								/ (Constants.getN_TOTAL_PKTS() / 4);
+						gama = x;
+					}
+					if (vet.size() == 2) {
+						y = vet.get(1).doubleValue()
+								/ (Constants.getN_TOTAL_PKTS() / 4);
+						gama = (x + y) / 2;
+					}
+					if (vet.size() == 3) {
+						y = vet.get(2).doubleValue()
+								/ (Constants.getN_TOTAL_PKTS() / 4);
+						gama = (x + y + z) / 3;
+					}
+					if (vet.size() == 4) {
+						y = vet.get(3).doubleValue()
+								/ (Constants.getN_TOTAL_PKTS() / 4);
+						gama = (x + y + z + u) / 4;
+					}
+				}
 						
 				String point = (v + " " + w + " " + gama);
-				
 				TextManage.escreve(point);
-				
 			}
 			w = 0;
 			TextManage.escreve("");
@@ -259,9 +210,9 @@ public class Scheduler {
 
 		if (pktsParaAlocar != null) {
 			
-			switch (Constants.SORT_MODE) {
+			switch (Constants.getSORT_MODE()) {
 			case 1:
-				calcDelta(pktsParaAlocar,1,0.1);
+				calcDelta(pktsParaAlocar,Constants.getOMEGA_ALPHA(),Constants.getOMEGA_BETA());
 				sortByDelta(pktsParaAlocar);
 				delta=true;
 				break;
@@ -273,7 +224,7 @@ public class Scheduler {
 				break;
 			}
 			
-			for (int j = 0; j < Constants.TTI_TOTAL; j++) { // inicio TTI
+			for (int j = 0; j < Constants.getTTI_TOTAL(); j++) { // inicio TTI
 				TTI tti_tmp = null;
 				tti_tmp = new TTI();
 				tti_tmp.setId(j);
@@ -303,9 +254,9 @@ public class Scheduler {
 		ArrayList<TTI> ttiTmp = new ArrayList<TTI>();
 		ArrayList<Packet> pktsParaAlocar = new ArrayList<Packet>();
 		
-		
+		//aux vai retornar a quantidade de pkts expirados de cada tipo de serviço
 		ArrayList<Integer> aux = new ArrayList<Integer>();
-		int totalTipoA=0,totalTipoB=0;
+		int totalTipoA=0,totalTipoB=0,totalTipoC=0,totalTipoD=0;
 		
 		pktsParaAlocar = util.copyArray(tmp);
 
@@ -313,7 +264,7 @@ public class Scheduler {
 			calcDelta(pktsParaAlocar, v, w);
 			sortByDelta(pktsParaAlocar);
 
-			for (int j = 0; j < Constants.TTI_TOTAL; j++) {
+			for (int j = 0; j < Constants.getTTI_TOTAL(); j++) {
 				TTI tti_tmp = null;
 				tti_tmp = new TTI();
 				tti_tmp.setId(j);
@@ -327,8 +278,10 @@ public class Scheduler {
 				pktsParaAlocar = updateDelay(pktsParaAlocar);
 				calcDelta(pktsParaAlocar, v, w);
 				
-				//TESTES
-				// aqui verificar caso eu estiver no TTI 50+1 ou no TTI 100+1 para retirarmos os pacotes espirados
+				// Aqui verificar caso eu estiver no TTI 51,101,201,301, os meus serviços  
+				// A,B,C ou D, respectivamente já expiraram, logo é necessário contabilizar
+				// os pacotes expirados
+				
 				if (j==51){ 
 					for (Packet p : pktsParaAlocar){
 						//System.out.println("pkt_ID="+p.getId()+" | "+"pkt_DELAY="+p.getDelay()+" | "+"pkt_TIPO="+p.getTos());
@@ -347,6 +300,25 @@ public class Scheduler {
 					}
 						aux.add(totalTipoB);
 				}
+				
+				if (j==201){ 
+					for (Packet p : pktsParaAlocar){
+						if(p.getTos()==3){
+							totalTipoC++;
+						} 
+					}
+						aux.add(totalTipoC);
+				}
+				
+				if (j==301){ 
+					for (Packet p : pktsParaAlocar){
+						if(p.getTos()==4){
+							totalTipoD++;
+						} 
+					}
+						aux.add(totalTipoD);
+				}
+				
 			}
 		}
 		return aux;
@@ -363,7 +335,7 @@ public class Scheduler {
 			calcDelta(pktsParaAlocar, v, w);
 			sortByDelta(pktsParaAlocar);
 
-			for (int j = 0; j < Constants.TTI_TOTAL; j++) {
+			for (int j = 0; j < Constants.getTTI_TOTAL(); j++) {
 				TTI tti_tmp = null;
 				tti_tmp = new TTI();
 				tti_tmp.setId(j);
@@ -396,7 +368,7 @@ public class Scheduler {
 
 	public static ArrayList<SB> createSB(ArrayList<Packet> pktsParaAlocar) {
 		ArrayList<SB> sbTmp = new ArrayList<SB>();
-		for (int x = 0; x < Constants.SB_EACH_TTI; x++) { // inicio SB
+		for (int x = 0; x < Constants.getSB_EACH_TTI(); x++) { // inicio SB
 
 			Iterator<Packet> it_pkt = pktsParaAlocar.iterator();
 

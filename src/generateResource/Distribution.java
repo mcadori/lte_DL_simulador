@@ -67,7 +67,7 @@ public class Distribution extends Random {
 	 * Gera usuarios aleatórios uniformes entre 1 e 10
 	 */
 	public static int getRandomUser() {
-		int maxNumber = Constants.N_USERS+1; // Valor maximo q ele retorna
+		int maxNumber = Constants.getN_USERS()+1; // Valor maximo q ele retorna
 		Random rand = new Random();
 
 		int num = 0;

@@ -1,7 +1,6 @@
 package showResults;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -17,7 +16,6 @@ import com.panayotis.gnuplot.plot.DataSetPlot;
 import com.panayotis.gnuplot.style.NamedPlotColor;
 import com.panayotis.gnuplot.style.PlotStyle;
 import com.panayotis.gnuplot.style.Style;
-import com.panayotis.gnuplot.utils.Debug;
 
 public class Plot {
 
@@ -31,7 +29,7 @@ public class Plot {
 		ArrayList<TTI> dataTmp = ttiTmp;
 		ArrayList<Double> aux = getSBThroughput(dataTmp);
 
-		double meanSBsRate = calcMeanRate(aux);
+		//double meanSBsRate = calcMeanRate(aux);
 		//double meanSBsRate = calcMeanRateSample(aux); // Retorna media de aux/10
 		
 		double[][] dataToPlot = new double[aux.size()][2];
@@ -62,13 +60,15 @@ public class Plot {
 		p.addPlot(s);
 		p.newGraph();
 		
-		/* media */
-		double[][] r = { { 1, meanSBsRate } };
-		p.getAxis("x").setLabel("");
-		p.getAxis("y").setLabel("Rate médio");
-		p.getAxis("x").setBoundaries(0,2);
-		p.getAxis("y").setBoundaries(0, 1);
-		p.addPlot(r);
+		/* Para incluir um grafico do rate medio do escalonamento descomentar esta parte */
+//		double[][] r = { { 1, meanSBsRate } };
+//		DataSetPlot w = new DataSetPlot(r);
+//		w.setTitle("Rate absoluto");
+//		p.getAxis("x").setLabel("");
+//		p.getAxis("y").setLabel("Rate médio");
+//		p.getAxis("x").setBoundaries(0,2);
+//		p.getAxis("y").setBoundaries(0, 1);
+//		p.addPlot(w);
 		
 		p.plot();
 	}
@@ -132,14 +132,20 @@ public class Plot {
 				dataToPlot[row][1] = row;
 			}
 		}
+		
+		// Para limitar o tamanho dos limites do gráfico, pega maior e menor valor de aux
+		 Object max_obj = Collections.max(aux);
+		 Object min_obj = Collections.min(aux);
+		 Double min = (Double) min_obj;
+		 Double max = (Double) max_obj;
 
 		JavaPlot p = new JavaPlot();
 		DataSetPlot s = new DataSetPlot(dataToPlot);
-
-		p.setTitle("Resultados Parciais");
-		p.getAxis("x").setLabel("Delay");
-		p.getAxis("y").setLabel("SB ID");
-		p.getAxis("x").setBoundaries(-2.0, 10.0);
+		s.setTitle("Pacotes");
+		p.setTitle("Análise do atraso no escalonamento");
+		p.getAxis("x").setLabel("Linha do tempo (ms)");
+		p.getAxis("y").setLabel("ID do SB onde esta o pacote");
+		p.getAxis("x").setBoundaries(min-20, max+20);
 		p.getAxis("y").setBoundaries(0.0, aux.size());
 
 		PlotStyle myPlotStyle = new PlotStyle();
@@ -160,14 +166,16 @@ public class Plot {
 	 */
 	public static void plotFairness(ArrayList<TTI> simulation) {
 		
-		Double[] aux1 = new Double[Constants.N_USERS+1];
-		
-		for(int p=0;p<=Constants.N_USERS;p++)
-			aux1[p]=0.0;
-		
+		Double[] aux1 = new Double[Constants.getN_USERS()+1];		
+		aux1 = getFairnessPerUser(simulation);		
 		Double fairness = getFairnessIndex(simulation);
+		double[][] dataToPlot = new double[Constants.getN_USERS()+1][2];
 		
-		double[][] dataToPlot = new double[11][Constants.N_USERS];
+		double max=0;
+		for (Double tmp : aux1) {
+			if (tmp>max)
+				max=tmp;
+		}
 		
 		int x = 0;
 		for (Double temp : aux1) {
@@ -178,19 +186,18 @@ public class Plot {
 		
 		JavaPlot fairnessPlot = new JavaPlot();
 		DataSetPlot s = new DataSetPlot(dataToPlot);
-
-		double limit_y = Constants.N_TOTAL_SB*1.08;
+		s.setTitle("Rate por usuário");
 		
 		fairnessPlot.setTitle("Resultados Parciais");
 		fairnessPlot.setTitle("Análise de justiça");
 		fairnessPlot.getAxis("y").setLabel("Rate (Mbps)");
 		fairnessPlot.getAxis("x").setLabel("Usuario");
-		fairnessPlot.getAxis("y").setBoundaries(0, limit_y);
-		fairnessPlot.getAxis("x").setBoundaries(-1, Constants.N_USERS+1);
+		fairnessPlot.getAxis("y").setBoundaries(0, max+10);
+		fairnessPlot.getAxis("x").setBoundaries(-1, Constants.getN_USERS()+1);
 
 		PlotStyle myPlotStyle = new PlotStyle();
 		
-		myPlotStyle.setStyle(Style.ERRORBARS);
+		myPlotStyle.setStyle(Style.IMPULSES);
 		myPlotStyle.setLineType(NamedPlotColor.BLUE);
 		myPlotStyle.setLineWidth(2);
 		s.setPlotStyle(myPlotStyle);
@@ -204,7 +211,7 @@ public class Plot {
 		fairnessPlot.getAxis("x").setBoundaries(0, 2);
 		
 		double[][] r = { { 1, fairness } };
-		
+
 		fairnessPlot.addPlot(r);
 		fairnessPlot.newGraph();
 		fairnessPlot.plot();
@@ -222,9 +229,9 @@ public class Plot {
 	public static Double getFairnessIndex(ArrayList<TTI> simulation) {
 		ArrayList<TTI> itr = simulation;
 		ArrayList<SB> itr1 = null;
-		Double[] aux = new Double[Constants.N_USERS+1];
+		Double[] aux = new Double[Constants.getN_USERS()+1];
 		
-		for(int p=0;p<=Constants.N_USERS;p++)
+		for(int p=0;p<=Constants.getN_USERS();p++)
 			aux[p]=0.0;
 		
 		for (int i = 0; i < itr.size(); i++) {
@@ -234,7 +241,7 @@ public class Plot {
 			for (int j = 0; j < itr1.size(); j++) {
 				SB element1 = itr1.get(j);
 				
-				for (int k=1;k<=Constants.N_USERS;k++){
+				for (int k=1;k<=Constants.getN_USERS();k++){
 					if (element1.getPacket().getUser() == k){
 						aux[k]= aux[k] + element1.getThroughput();
 					}  
@@ -244,18 +251,49 @@ public class Plot {
 		
 		Double sum_rate = 0., sum_quadrada = 0., fairness=0.;
 
-		for(int p=1;p<=Constants.N_USERS;p++){
+		for(int p=1;p<=Constants.getN_USERS();p++){
 			//System.out.println("Rate do user "+p+" = "+aux[p]);
-			sum_rate=(aux[p]/Constants.N_USERS)+sum_rate;
-			sum_quadrada=Math.pow((aux[p]/Constants.N_USERS),2)+sum_quadrada;
+			sum_rate=(aux[p]/Constants.getN_USERS())+sum_rate;
+			sum_quadrada=Math.pow((aux[p]/Constants.getN_USERS()),2)+sum_quadrada;
 		}
 				
-		fairness=(Math.pow(Math.abs(sum_rate),2) / (Constants.N_USERS*sum_quadrada));
+		fairness=(Math.pow(Math.abs(sum_rate),2) / (Constants.getN_USERS()*sum_quadrada));
 		return fairness;
+	}
+	
+	/**
+	 * Recebe uma simulação e retorna um array de double com a soma dos rates de cada usuario
+	 * 
+	 * @param simulation
+	 * @return
+	 */
+	public static Double[] getFairnessPerUser(ArrayList<TTI> simulation){
+		ArrayList<TTI> itr = simulation;
+		ArrayList<SB> itr1 = null;
+		Double[] aux = new Double[Constants.getN_USERS()+1];
+		
+		for(int p=0;p<=Constants.getN_USERS();p++)
+			aux[p]=0.0;
+		
+		for (int i = 0; i < itr.size(); i++) {
+			TTI element = itr.get(i);
+			itr1 = element.getSchedulingBlocks();
+
+			for (int j = 0; j < itr1.size(); j++) {
+				SB element1 = itr1.get(j);
+				
+				for (int k=1;k<=Constants.getN_USERS();k++){
+					if (element1.getPacket().getUser() == k){
+						aux[k]= aux[k] + element1.getThroughput();
+					}  
+				} 
+			}
+		}
+		return aux;
 	}
 
 	/**
-	 * Recebe os dados da simulacao Obtem o delay de cada SB Retorna array com
+	 * Recebe os dados da simulacao e obtem o delay de cada Pacote e retorna um array com
 	 * os delays
 	 * 
 	 * @param ttiTmp
@@ -310,7 +348,7 @@ public class Plot {
 		List<Double> aux1 = getSBUser(dataTmp);
 		Set<Double> uniqueSet = new HashSet<Double>(aux1);
 		// double meanSBsRate = calcMeanRate(aux);
-		double[][] dataToPlot = new double[Constants.N_USERS][2];
+		double[][] dataToPlot = new double[Constants.getN_USERS()][2];
 
 		int x = 0;
 		for (Double temp : uniqueSet) {
@@ -327,7 +365,7 @@ public class Plot {
 		p.getAxis("y").setLabel("N de SBs");
 		p.getAxis("x").setLabel("Usuário");
 		p.getAxis("y").setBoundaries(0, aux1.size());
-		p.getAxis("x").setBoundaries(-1, Constants.N_USERS+1);
+		p.getAxis("x").setBoundaries(-1, Constants.getN_USERS()+1);
 
 		PlotStyle myPlotStyle = new PlotStyle();
 		myPlotStyle.setStyle(Style.IMPULSES);
@@ -390,6 +428,7 @@ public class Plot {
 		PlotStyle myPlotStyle = new PlotStyle();
 		myPlotStyle.setStyle(Style.IMPULSES);
 		myPlotStyle.setLineWidth(10);
+		s.setTitle("SBs");
 		s.setPlotStyle(myPlotStyle);
 
 		p.addPlot(s);
@@ -460,141 +499,91 @@ public class Plot {
 				t4_NaoAlocado.add(p);
 		}
 		
-		System.out.println("tipo 1 - Alocados "+t1_Alocado.size()+"--"+"Nao Alocados "+t1_NaoAlocado.size());
-		System.out.println("tipo 2 - Alocados "+t2_Alocado.size()+"--"+"Nao Alocados "+t2_NaoAlocado.size());
-		System.out.println("tipo 3 - Alocados "+t3_Alocado.size()+"--"+"Nao Alocados "+t3_NaoAlocado.size());
-		System.out.println("tipo 4 - Alocados "+t4_Alocado.size()+"--"+"Nao Alocados "+t4_NaoAlocado.size());
+		//System.out.println("tipo 1 - Alocados "+t1_Alocado.size()+"--"+"Nao Alocados "+t1_NaoAlocado.size());
+		//System.out.println("tipo 2 - Alocados "+t2_Alocado.size()+"--"+"Nao Alocados "+t2_NaoAlocado.size());
+		//System.out.println("tipo 3 - Alocados "+t3_Alocado.size()+"--"+"Nao Alocados "+t3_NaoAlocado.size());
+		//System.out.println("tipo 4 - Alocados "+t4_Alocado.size()+"--"+"Nao Alocados "+t4_NaoAlocado.size());
 
 		double[][] data_1 = new double[1][2];
 		double[][] data_2 = new double[1][2];
 
 		data_1[0][0] = 0;
-		data_1[0][1] = alocados.size();
+		data_1[0][1] = naoAlocados.size();
 
 		data_2[0][0] = 0.009;
-		data_2[0][1] = naoAlocados.size();
+		data_2[0][1] = alocados.size();
 
 		JavaPlot p = new JavaPlot();
-
 		PlotStyle myPlotStyle = new PlotStyle();
-
 		myPlotStyle.setStyle(Style.IMPULSES);
-		
-		myPlotStyle.setLineWidth(7);
-
+		myPlotStyle.setLineWidth(5);
 		DataSetPlot s = new DataSetPlot(data_1);
 		DataSetPlot q = new DataSetPlot(data_2);
-		s.setTitle("Alocados");
-		q.setTitle("Nao Alocados");
-
+		s.setTitle("Não Alocado");
+		q.setTitle("Alocado");
 		s.setPlotStyle(myPlotStyle);
 		q.setPlotStyle(myPlotStyle);
 
-		p.setTitle("Resultados Parciais");
-		p.getAxis("y").setLabel("N de Pkts");
+		p.setMultiTitle("Análise do status de alocação por tipo de serviço");
+		p.getAxis("y").setLabel("Num TOTAL de Pacotes");
 
-		p.getAxis("y").setBoundaries(0, Math.max(alocados.size(), naoAlocados.size()) + 10);
+		p.getAxis("y").setBoundaries(0, Math.max(alocados.size(), naoAlocados.size()) + 50);
 		p.getAxis("x").setBoundaries(-0.1, 0.1);
 
-		p.addPlot(q);
 		p.addPlot(s);
+		p.addPlot(q);
 		p.newGraph();
 		
-		//segundo grafico
+		//Gera graficos por tipo
+		int t1=1,t2=2,t3=3,t4=4;
+		generate_subgraph(t2_Alocado, t1_NaoAlocado, p, t1);
+		generate_subgraph(t2_Alocado, t2_NaoAlocado, p, t2);
+		generate_subgraph(t2_Alocado, t3_NaoAlocado, p, t3);
+		generate_subgraph(t2_Alocado, t4_NaoAlocado, p, t4);
 		
+		/******/
+		
+		p.plot();
+		
+	}
+
+	/**
+	 * Gera subgráficos no plot do status da alocação
+	 * @param type_x_Alocado
+	 * @param type_x_NaoAlocado
+	 * @param p = plot
+	 * @param t = tipo
+	 */
+	public static void generate_subgraph(ArrayList<Packet> type_x_Alocado,
+			ArrayList<Packet> type_x_NaoAlocado, JavaPlot p, int t) {
 		double[][] d1 = new double[1][2];
 		double[][] d2 = new double[1][2];
 
+		//Nao alocados
 		d1[0][0] = 0;
-		d2[0][1] = 3;
+		d1[0][1] = type_x_NaoAlocado.size();
 
-		d1[0][0] = 0.009;
-		d2[0][1] = 3;
+		//Alocados
+		d2[0][0] = 0.009;
+		d2[0][1] = type_x_Alocado.size();
 		
 		DataSetPlot v1 = new DataSetPlot(d1);
 		DataSetPlot v2 = new DataSetPlot(d2);
-		v1.setTitle("T1 Alocados");
-		v2.setTitle("T1 N Alocados");
+		
+		p.getAxis("y").setLabel("Num de pacotes do tipo "+t);
+		
+		v1.setTitle("Não Alocado");
+		v2.setTitle("Alocado");
 
-//		v1.setPlotStyle(myPlotStyle);
-//		v2.setPlotStyle(myPlotStyle);
+		PlotStyle plotStyle1 = new PlotStyle();
+		plotStyle1.setStyle(Style.IMPULSES);
+		plotStyle1.setLineWidth(7);
+		
+		v1.setPlotStyle(plotStyle1);
+		v2.setPlotStyle(plotStyle1);
 
 		p.addPlot(v1);
 		p.addPlot(v2);
 		p.newGraph();
-		
-//		//terceiro grafico
-//		
-//		double[][] d3 = new double[1][2];
-//		double[][] d4 = new double[1][2];
-//
-//		d3[0][0] = 0;
-//		d4[0][1] = t2_Alocado.size();
-//
-//		d3[0][0] = 0.009;
-//		d4[0][1] = t2_NaoAlocado.size();
-//		
-//		DataSetPlot v3 = new DataSetPlot(d3);
-//		DataSetPlot v4 = new DataSetPlot(d4);
-//		v3.setTitle("T2 Alocados");
-//		v4.setTitle("T2 N Alocados");
-//
-//		v3.setPlotStyle(myPlotStyle);
-//		v4.setPlotStyle(myPlotStyle);
-//
-//		p.addPlot(v3);
-//		p.addPlot(v4);
-//		p.newGraph();
-//
-//		//quarto grafico
-//		
-//		double[][] d5 = new double[1][2];
-//		double[][] d6 = new double[1][2];
-//
-//		d5[0][0] = 0;
-//		d6[0][1] = t3_Alocado.size();
-//
-//		d5[0][0] = 0.009;
-//		d6[0][1] = t3_NaoAlocado.size();
-//		
-//		DataSetPlot v5 = new DataSetPlot(d5);
-//		DataSetPlot v6 = new DataSetPlot(d6);
-//		
-//		v5.setTitle("T3 Alocados");
-//		v6.setTitle("T3 N Alocados");
-//
-//		v5.setPlotStyle(myPlotStyle);
-//		v6.setPlotStyle(myPlotStyle);
-//
-//		p.addPlot(v5);
-//		p.addPlot(v6);
-//		p.newGraph();
-//		
-//		//quarto grafico
-//		
-//		double[][] d7 = new double[1][2];
-//		double[][] d8 = new double[1][2];
-//
-//		d7[0][0] = 0;
-//		d8[0][1] = t4_Alocado.size();
-//
-//		d7[0][0] = 0.009;
-//		d8[0][1] = t4_NaoAlocado.size();
-//		
-//		DataSetPlot v7 = new DataSetPlot(d7);
-//		DataSetPlot v8 = new DataSetPlot(d8);
-//		
-//		v7.setTitle("T4 Alocados");
-//		v8.setTitle("T4 N Alocados");
-//
-//		v7.setPlotStyle(myPlotStyle);
-//		v8.setPlotStyle(myPlotStyle);
-//
-//		p.addPlot(v7);
-//		p.addPlot(v8);
-//		p.newGraph();
-
-		p.plot();
-		
 	}
 }
